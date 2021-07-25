@@ -3,8 +3,7 @@ import { StyleSheet, Dimensions } from 'react-native';
 import { Box, Image } from 'native-base';
 import MapView, { Marker } from 'react-native-maps';
 import getPunto from '../../pruebas'
-import IconMarker from '../../assets/logoMarker.png';
-import LogoMarker from '../../assets/icon.png';
+import LogoMarker from '../../assets/logoMarker.png';
 
 export default class Map extends Component {
   constructor(props) {

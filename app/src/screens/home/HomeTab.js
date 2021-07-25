@@ -19,7 +19,7 @@ import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import { useNavigation } from '@react-navigation/native';
 import getPunto from '../../pruebas'
-import LogoMarker from '../../assets/icon.png';
+import LogoMarker from '../../assets/logoMarker.png';
 
 class HomeTab extends Component {
   constructor(props) {
