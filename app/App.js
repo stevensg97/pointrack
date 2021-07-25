@@ -1,49 +1,41 @@
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { StyleSheet, Text, View, Dimensions } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import getPunto from './src/pruebas'
+import 'react-native-gesture-handler';
+import * as React from 'react';
+import {
+  NativeBaseProvider,
+  extendTheme,
+  StatusBar
+} from 'native-base';
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import { NavigationContainer } from '@react-navigation/native';
+import DrawerContent from './src/screens/drawercontent/index'
+import HomeScreen from './src/screens/home/index'
+
+import { SCREENS } from './src/config/constants'
+import { colors } from './src/config/styles'
+
+const Drawer = createDrawerNavigator();
+
+const theme = extendTheme({ colors: colors });
+
+const config = {
+  dependencies: {
+    // For Expo projects (Bare or managed workflow)
+    'linear-gradient': require('expo-linear-gradient').LinearGradient,
+    // For non expo projects
+    // 'linear-gradient': require('react-native-linear-gradient').default,
+  },
+};
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <MapView style={styles.map}
-        initialRegion={
-          {
-            latitude: getPunto()[0].latlng.latitude,
-            longitude: getPunto()[0].latlng.longitude,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
-          }
-        }>
-        {getPunto().map((item, index) => (
-          <Marker
-            key={index}
-            
-            pinColor={'green'}
-            coordinate={item.latlng}
-            title={item.nombre}
-            description={item.description}
-          >
+    <NativeBaseProvider config={config} theme={theme}>
+      <StatusBar backgroundColor={colors.primary[600]} barStyle="light-content" />
+      <NavigationContainer>
+        <Drawer.Navigator initialRouteName={SCREENS.HOME} drawerContentOptions={SCREENS} drawerContent={props => <DrawerContent {...props} />}>
+          <Drawer.Screen name={SCREENS.HOME} component={HomeScreen} />
+        </Drawer.Navigator>
+      </NavigationContainer>
+    </NativeBaseProvider>
 
-          </Marker>
-
-        ))}
-
-      </MapView>
-    </View >
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  map: {
-    width: Dimensions.get('window').width,
-    height: Dimensions.get('window').height,
-  },
-});
