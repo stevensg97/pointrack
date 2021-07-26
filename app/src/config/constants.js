@@ -21,7 +21,10 @@ export const TYPE_ALERT = {
   INFO: 'info'
 }
 
-
+export const MAP_DATA = {
+  LATITUDE_DELTA: 0.0306097200809905,
+  LONGITUDE_DELTA: 0.016958601772799398
+}
 
 export const BUTTONS = {
   ACEPTAR: 'Aceptar',

@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import { Dimensions, Animated, Pressable } from 'react-native';
 import { TabView, SceneMap } from 'react-native-tab-view';
 import { useNavigation } from '@react-navigation/native';
+import { useIsDrawerOpen } from '@react-navigation/drawer';
 import { Box, HStack, VStack, HamburgerIcon, Center, Heading, Divider, StatusBar, Icon, Image } from 'native-base';
 import {
   MaterialCommunityIcons
@@ -81,7 +82,7 @@ class HomeScreen extends Component {
   renderScene = ({ route }) => {
     switch (route.key) {
       case 'home':
-        return <HomeTab />;
+        return <HomeTab index={this.state.index}/>;
       case 'inventary':
         return <InventaryTab />;
       default:
@@ -133,7 +134,8 @@ class HomeScreen extends Component {
 }
 
 export default function (props) {
-  const navigation = useNavigation();
+  //const navigation = useNavigation();
+  //const isDrawerOpen = useIsDrawerOpen();
 
-  return <HomeScreen {...props} navigation={navigation} />;
+  return <HomeScreen {...props} /* navigation={navigation} */ /* isDrawerOpen={isDrawerOpen} */ />;
 }
