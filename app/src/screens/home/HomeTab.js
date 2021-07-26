@@ -194,7 +194,7 @@ class HomeTab extends Component {
                 initialRegion={this.state.region}
                 onRegionChangeComplete={this._onRegionChange}
               >
-                {this.state.autoMarkers.map((item, index) => (
+                {/* this.state.autoMarkers.map((item, index) => (
                   <Marker
                     key={index}
                     pinColor={'green'}
@@ -209,7 +209,7 @@ class HomeTab extends Component {
                       </Box>
                     </Callout>
                   </Marker>
-                ))}
+                )) */}
                 {this.state.selectedMarkers.map((item, index) => (
                   <Marker
                     key={index}
@@ -226,9 +226,9 @@ class HomeTab extends Component {
                     </Callout>
                   </Marker>
                 ))}
-                {this.state.selectedMarkersCordinates != [] &&
+                {this.state.autoMarkersCordinates != [] &&
                   <Polyline
-                    coordinates={this.state.selectedMarkersCordinates}
+                    coordinates={this.state.autoMarkersCordinates}
                     strokeColor={colors.primary[500]} // fallback for when `strokeColors` is not supported by the map-provider
                     strokeWidth={6}
                     lineDashPattern={[1]}
