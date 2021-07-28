@@ -22,6 +22,7 @@ import IconLogo from '../../assets/logo.png';
 import IconUser from '../../assets/user.jpg';
 import DrawerBackground from '../../assets/drawerBackground.png';
 import { TITLES, DRAWER_OPTIONS } from '../../config/constants';
+import { colors } from '../../config/styles';
 
 
 

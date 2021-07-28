@@ -22,8 +22,8 @@ class InventaryTab extends Component {
   render() {
     const { navigation } = this.props;
     return (
-      <Box flex={1} bg='gradient_secondary'>
-        
+      <Box flex={1} bg='primary.400'>
+
       </Box>
     );
   }
