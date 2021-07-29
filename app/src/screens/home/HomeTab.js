@@ -15,6 +15,7 @@ import {
   HStack,
   Modal,
   Button,
+  ScrollView,
   KeyboardAvoidingView
 } from 'native-base';
 import { StyleSheet, Dimensions } from 'react-native';
@@ -29,12 +30,13 @@ import {
 } from '../../config/constants';
 import { MaterialCommunityIcons } from "@expo/vector-icons"
 import * as Location from 'expo-location';
-import MapView, { Marker, Polyline, Callout } from 'react-native-maps';
+import MapView, { Marker, Polyline, Callout, PROVIDER_DEFAULT } from 'react-native-maps';
 import haversine from 'haversine'
 import { useNavigation } from '@react-navigation/native';
 import { useIsDrawerOpen } from '@react-navigation/drawer';
 import LogoMarker from '../../assets/logoMarker.png';
 import { colors } from '../../config/styles';
+import { mapStyle } from '../../config/mapStyle';
 
 class HomeTab extends Component {
   constructor(props) {
@@ -46,21 +48,22 @@ class HomeTab extends Component {
       autoMarkers: [],
       autoMarkersCordinates: [],
       selectedMarkers: [],
-      selectedMarkersCordinates: [],
-      showSelectMarkerModal: false,
+      selectedMarkersCounter: 0,
+      renderCallout: null,
+      showSelectMarkerModal: true,
       markerOnEditing: {
-        name: '',
+        id: '',
         latlng: {
           latitude: 0,
           longitude: 0
         },
         altitude: -1,
+        distance: -1,
         description: [],
         observations: '',
         timestamp: 0
       },
-      tracking: false,
-      distanceTravelled: 0,
+      isTracking: false,
       region: {
         latitude: 0,
         longitude: 0,
@@ -71,16 +74,17 @@ class HomeTab extends Component {
 
     };
     this.blankMarker = {
-        name: '',
-        latlng: {
-          latitude: 0,
-          longitude: 0
-        },
-        altitude: -1,
-        description: [],
-        observations: '',
-        timestamp: 0
-      }
+      id: '',
+      latlng: {
+        latitude: 0,
+        longitude: 0
+      },
+      altitude: -1,
+      distance: 0,
+      description: [],
+      observations: '',
+      timestamp: 0
+    }
   }
 
   componentDidMount = async () => {
@@ -103,95 +107,82 @@ class HomeTab extends Component {
     clearInterval(this.trackingInterval);
   }
 
-  _addAutoMarker = async () => {
-    let location = await Location.getCurrentPositionAsync({ accuracy: 6 });
-    let markers = this.state.autoMarkers;
-    const coordinates = { latitude: location.coords.latitude, longitude: location.coords.longitude }
-    markers.push(
-      {
-        name: 'auto' + String(this.state.autoMarkers.length),
-        latlng: {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude
-        },
-        altitude: location.coords.altitude,
-        timestamp: location.timestamp
-      }
-    );
-    this.setState(prevState => ({
-      autoMarkers: markers,
-      autoMarkersCordinates: [...prevState.autoMarkersCordinates, coordinates]
-    }));
-    const len = this.state.autoMarkersCordinates.length;
-    if (len > 1) {
-      let totalDistance = 0;
-      for (let i = 0; i < len - 1; i++) {
-        totalDistance = totalDistance +
-          this._calcDistance(this.state.autoMarkersCordinates[i], this.state.autoMarkersCordinates[i + 1]);
-
-      }
-      this.setState({ distanceTravelled: totalDistance });
+  _addAutoMarker = async () => { //arreglar la suma de distancias
+    let location = await Location.getCurrentPositionAsync({ accuracy: 6 }); // Se obtiene la posición actual
+    const newCoordinates = { latitude: location.coords.latitude, longitude: location.coords.longitude } //Se extraen las coordenadas del nuevo marcador
+    const len = this.state.autoMarkers.length; //Se obtiene el largo de la lista de marcadores original
+    let distance = 0; //Se define la distancia inicial
+    if (len >= 1) { //Se verifica que la lista no esté vacia
+      const prevCoords = { latitude: this.state.autoMarkers[len - 1].latlng.latitude, longitude: this.state.autoMarkers[len - 1].latlng.longitude } //Se obtienen las coordenadas del último marcador
+      distance = this.state.autoMarkers[len - 1].distance + this._calcDistance(prevCoords, newCoordinates);  //Se calcula la distancia entre el último marcador y el nuevo
     }
+    const newMarker = { //Se crea el nuevo marcador
+      id: 'auto' + String(this.state.autoMarkers.length),
+      latlng: {
+        latitude: newCoordinates.latitude,
+        longitude: newCoordinates.longitude
+      },
+      altitude: location.coords.altitude,
+      distance: distance,
+      timestamp: location.timestamp
+    }
+    this.setState(prevState => ({ //Se actualizan las listas de marcadores y coordenadas
+      autoMarkers: [...prevState.autoMarkers, newMarker],
+      autoMarkersCordinates: [...prevState.autoMarkersCordinates, newCoordinates]
+    }));
   }
 
   _addSelectedMarker = async () => {
-    let markers = this.state.selectedMarkers;
-    markers.push(
-      {
-        name: 'selected' + String(this.state.selectedMarkers.length),
-        latlng: { latitude: this.state.region.latitude, longitude: this.state.region.longitude },
-        altitude: -1,
-        description: [],
-        observations: '',
-        timestamp: 0
-      }
-    );
-    this.setState({
-      selectedMarkers: markers,
-      markerOnEditing: markers[markers.length - 1],
+    const newMarker = {
+      id: 'selected' + String(this.state.selectedMarkersCounter),
+      latlng: { latitude: this.state.region.latitude, longitude: this.state.region.longitude },
+      distance: this.state.autoMarkers[this.state.autoMarkers.length - 1].distance,
+      altitude: -1,
+      description: [],
+      observations: '',
+      timestamp: 0
+    }
+    this.setState(prevState => ({
+      selectedMarkers: [...prevState.selectedMarkers, newMarker],
+      selectedMarkersCounter: this.state.selectedMarkersCounter + 1,
+      markerOnEditing: newMarker,
       showSelectMarkerModal: true,
-    });
-    this._calcSelectMarkerAltitude(this.state.selectedMarkers.length - 1)
+    }));
+
   }
 
-  _calcSelectMarkerAltitude = (index) => {
+  _calcAltitudeFromCords = (coords) => {
     if (this.state.autoMarkers.length == 1) {
-      let selectedMarkers = [...this.state.selectedMarkers];
-      let marker = { ...selectedMarkers[index] };
-      marker.altitude = this.state.autoMarkers[0].altitude;
-      selectedMarkers[index] = marker;
-      this.setState({ selectedMarkers: selectedMarkers })
+      return this.state.autoMarkers[0].altitude;
     }
     if (this.state.autoMarkers.length > 1) {
       let autoMarkerIndex = 0;
-      let deltaLat = this.state.selectedMarkers[index].latlng.latitude - this.state.autoMarkers[autoMarkerIndex].latlng.latitude;
-      let deltaLng = this.state.selectedMarkers[index].latlng.longitude - this.state.autoMarkers[autoMarkerIndex].latlng.longitude;
+      let deltaLat = coords.latitude - this.state.autoMarkers[autoMarkerIndex].latlng.latitude;
+      let deltaLng = coords.longitude - this.state.autoMarkers[autoMarkerIndex].latlng.longitude;
       for (let i = 1; i < this.state.autoMarkers.length; i++) {
-        let newDeltaLat = this.state.selectedMarkers[index].latlng.latitude - this.state.autoMarkers[i].latlng.latitude;
-        let newDeltaLng = this.state.selectedMarkers[index].latlng.longitude - this.state.autoMarkers[i].latlng.longitude;
+        let newDeltaLat = coords.latitude - this.state.autoMarkers[i].latlng.latitude;
+        let newDeltaLng = coords.longitude - this.state.autoMarkers[i].latlng.longitude;
         if (Math.abs(deltaLat) > Math.abs(newDeltaLat) && Math.abs(deltaLng) > Math.abs(newDeltaLng)) {
           deltaLat = newDeltaLat;
           deltaLng = newDeltaLng;
           autoMarkerIndex = i;
         }
       }
-      let selectedMarkers = [...this.state.selectedMarkers];
-      let marker = { ...selectedMarkers[index] };
-      marker.altitude = this.state.autoMarkers[autoMarkerIndex].altitude;
-      selectedMarkers[index] = marker;
-      this.setState({ selectedMarkers: selectedMarkers })
+      return this.state.autoMarkers[autoMarkerIndex].altitude;
+    } else {
+      return -1
     }
-  };
+  }
 
   _calcDistance = (newLatLng, prevLatLng) => {
     return haversine(prevLatLng, newLatLng) || 0;
   };
 
-  _deleteSelectedMarker = (markerName) => {
+  _deleteSelectedMarker = (markerId) => {
     let markers = Array.from(this.state.selectedMarkers);
     let markerIndex = -1;
     for (let i = 0; i < this.state.selectedMarkers.length; i++) {
-      if (this.state.selectedMarkers[i].name == markerName) {
+      if (this.state.selectedMarkers[i].id == markerId) {
         markerIndex = i;
         break;
       }
@@ -206,7 +197,7 @@ class HomeTab extends Component {
     let markers = Array.from(this.state.selectedMarkers);
     let markerIndex = -1;
     for (let i = 0; i < this.state.selectedMarkers.length; i++) {
-      if (this.state.selectedMarkers[i].name == marker.name) {
+      if (this.state.selectedMarkers[i].id == marker.id) {
         markerIndex = i;
         break;
       }
@@ -241,9 +232,9 @@ class HomeTab extends Component {
     });
   };
 
-  _onEditMarkerModalTextChangedAltitude = event => {
+  _onEditMarkerModalTextChangedDistance = event => {
     let marker = JSON.parse(JSON.stringify(this.state.markerOnEditing));;
-    marker.altitude = Number(event.nativeEvent.text);
+    marker.distance = Number(event.nativeEvent.text);
     this.setState({
       markerOnEditing: marker
     });
@@ -275,21 +266,19 @@ class HomeTab extends Component {
       autoMarkers: [],
       autoMarkersCordinates: [],
       selectedMarkers: [],
-      selectedMarkersCordinates: [],
-      tracking: false,
-      distanceTravelled: 0,
+      isTracking: false,
     });
   }
 
   _startTracking = async () => {
-    this.setState({ tracking: true });
+    this.setState({ isTracking: true });
     this._addAutoMarker();
     this.trackingInterval = setInterval(() => this._addAutoMarker(), 5000);
   }
 
   _stopTracking = () => {
     clearInterval(this.trackingInterval);
-    this.setState({ tracking: false });
+    this.setState({ isTracking: false });
   }
 
 
@@ -322,54 +311,73 @@ class HomeTab extends Component {
             <Box flex={1}>
               {!isDrawerOpen && this.props.index == 0 &&
                 <Box>
-                  <Fab
-                    position="absolute"
-                    placement='bottom-left'
-                    mb={20}
-                    colorScheme='danger'
-                    icon={<Icon color="black" as={<MaterialCommunityIcons name={ICONS.MCI_UNDO} />} size="sm" />}
-                    label={
-                      <Text color="black" fontSize="sm">
-                        {PLACEHOLDERS.FAB_RESET}
-                      </Text>
-                    }
-                    onPress={this._resetMarkers}
-                  />
-                  <Fab
-                    position="absolute"
-                    placement='bottom-left'
-                    mb={20}
-                    left='37%'
-                    colorScheme='gradient_primary'
-                    icon={<Icon color="black" as={<MaterialCommunityIcons name={ICONS.MCI_PLUS} />} size="sm" />}
-                    label={
-                      <Text color="black" fontSize="sm">
-                        {PLACEHOLDERS.FAB_POINT}
-                      </Text>
-                    }
-                    onPress={this._addSelectedMarker}
-                  />
-                  <Fab
-                    position="absolute"
-                    placement='bottom-right'
-                    colorScheme='gradient_secondary'
-                    mb={20}
-                    icon={<Icon color="black" as={<MaterialCommunityIcons name={this.state.tracking ? ICONS.MCI_PAUSE : ICONS.MCI_PLAY} />} size="sm" />}
-                    label={
-                      <Text color="black" fontSize="sm">
-                        {PLACEHOLDERS.FAB_TRACKING}
-                      </Text>
-                    }
-                    onPress={this.state.tracking ? this._stopTracking : this._startTracking}
-                  />
+                  {this.state.isTracking ?
+                    <Box>
+                      <Fab
+                        position="absolute"
+                        placement='bottom-left'
+                        mb={20}
+                        colorScheme='danger'
+                        icon={<Icon color="black" as={<MaterialCommunityIcons name={ICONS.MCI_UNDO} />} size="sm" />}
+                        label={
+                          <Text color="black" fontSize="sm">
+                            {PLACEHOLDERS.FAB_RESET}
+                          </Text>
+                        }
+                        onPress={this._resetMarkers}
+                      />
+                      <Fab
+                        position="absolute"
+                        placement='bottom-left'
+                        mb={20}
+                        left='37%'
+                        colorScheme='gradient_primary'
+                        icon={<Icon color="black" as={<MaterialCommunityIcons name={ICONS.MCI_PLUS} />} size="sm" />}
+                        label={
+                          <Text color="black" fontSize="sm">
+                            {PLACEHOLDERS.FAB_POINT}
+                          </Text>
+                        }
+                        onPress={this._addSelectedMarker}
+                      />
+                      <Fab
+                        position="absolute"
+                        placement='bottom-right'
+                        colorScheme='gradient_secondary'
+                        mb={20}
+                        icon={<Icon color="black" as={<MaterialCommunityIcons name={this.state.isTracking ? ICONS.MCI_PAUSE : ICONS.MCI_PLAY} />} size="sm" />}
+                        label={
+                          <Text color="black" fontSize="sm">
+                            {PLACEHOLDERS.FAB_TRACKING}
+                          </Text>
+                        }
+                        onPress={this.state.isTracking ? this._stopTracking : this._startTracking}
+                      />
+                    </Box>
+                    :
+                    <Fab
+                      placement='bottom-right'
+                      colorScheme='gradient_secondary'
+                      mb={20}
+                      right='36%'
+                      icon={<Icon color="black" as={<MaterialCommunityIcons name={this.state.isTracking ? ICONS.MCI_PAUSE : ICONS.MCI_PLAY} />} size="sm" />}
+                      label={
+                        <Text color="black" fontSize="sm">
+                          {PLACEHOLDERS.FAB_TRACKING}
+                        </Text>
+                      }
+                      onPress={this.state.isTracking ? this._stopTracking : this._startTracking}
+                    />
+                  }
                 </Box>
               }
               <Box flex={1}>
                 <MapView style={styles.map}
+                  customMapStyle={mapStyle[1]}
                   loadingEnabled={true}
                   loadingIndicatorColor={colors.primary[300]}
                   loadingBackgroundColor={colors.primary[500]}
-                  moveOnMarkerPress={true}
+                  moveOnMarkerPress={false}
                   showsUserLocation={true}
                   showsCompass={true}
                   mapType={this.state.mapType}
@@ -390,8 +398,8 @@ class HomeTab extends Component {
                             </Center>
                             <VStack space={1} divider={<Divider />}>
                               <HStack alignItems='center'>
-                                <Text fontSize='sm' bold>{TITLES.NAME}</Text>
-                                <Text fontSize='sm' position="absolute" right={0}>{this.state.autoMarkers[0].name}</Text>
+                                <Text fontSize='sm' bold>{TITLES.ID}</Text>
+                                <Text fontSize='sm' position="absolute" right={0}>{this.state.autoMarkers[0].id}</Text>
                               </HStack>
                               <HStack alignItems='center'>
                                 <Text fontSize='sm' bold>{TITLES.LATITUDE}</Text>
@@ -400,6 +408,10 @@ class HomeTab extends Component {
                               <HStack alignItems='center'>
                                 <Text fontSize='sm' bold>{TITLES.LONGITUDE}</Text>
                                 <Text fontSize='sm' position="absolute" right={0}>{String(this.state.autoMarkers[0].latlng.longitude)}</Text>
+                              </HStack>
+                              <HStack alignItems='center'>
+                                <Text fontSize='sm' bold>{TITLES.DISTANCE}</Text>
+                                <Text fontSize='sm' position="absolute" right={0}>{String(this.state.autoMarkers[0].distance.toFixed(2))}{TITLES.KM}</Text>
                               </HStack>
                               <HStack alignItems='center'>
                                 <Text fontSize='sm' bold>{TITLES.ALTITUDE}</Text>
@@ -425,8 +437,8 @@ class HomeTab extends Component {
                             </Center>
                             <VStack space={1} divider={<Divider />}>
                               <HStack alignItems='center'>
-                                <Text fontSize='sm' bold>{TITLES.NAME}</Text>
-                                <Text fontSize='sm' position="absolute" right={0}>{this.state.autoMarkers[this.state.autoMarkers.length - 1].name}</Text>
+                                <Text fontSize='sm' bold>{TITLES.ID}</Text>
+                                <Text fontSize='sm' position="absolute" right={0}>{this.state.autoMarkers[this.state.autoMarkers.length - 1].id}</Text>
                               </HStack>
                               <HStack alignItems='center'>
                                 <Text fontSize='sm' bold>{TITLES.LATITUDE}</Text>
@@ -435,6 +447,10 @@ class HomeTab extends Component {
                               <HStack alignItems='center'>
                                 <Text fontSize='sm' bold>{TITLES.LONGITUDE}</Text>
                                 <Text fontSize='sm' position="absolute" right={0}>{String(this.state.autoMarkers[this.state.autoMarkers.length - 1].latlng.longitude)}</Text>
+                              </HStack>
+                              <HStack alignItems='center'>
+                                <Text fontSize='sm' bold>{TITLES.DISTANCE}</Text>
+                                <Text fontSize='sm' position="absolute" right={0}>{String(this.state.autoMarkers[this.state.autoMarkers.length - 1].distance.toFixed(2))}{TITLES.KM}</Text>
                               </HStack>
                               <HStack alignItems='center'>
                                 <Text fontSize='sm' bold>{TITLES.ALTITUDE}</Text>
@@ -456,57 +472,59 @@ class HomeTab extends Component {
                     <Marker
                       key={index}
                       ref={ref => { this.marker = ref; }}
-                      pinColor={'blue'}
+                      pinColor={'aqua'}
                       coordinate={item.latlng}
-                      draggable
-                      onCalloutPress={() => this.marker.hideCallout()}
+                      onPress={() => { this.setState({ renderCallout: index }); }} //BUG: No se renderea el callout hasta el segundo press
+                      onCalloutPress={() => { this.marker.hideCallout(); }}
                     >
-                      <Callout onPress={() => { this.setState({ showSelectMarkerModal: true, markerOnEditing: item }) }}>
-                        <Box w={300} h={280} >
-                          <Center>
-                            <Heading fontSize='md' color='primary.500' bold>{TITLES.POINT_SELECTED}</Heading>
-                          </Center>
-                          <VStack space={1} divider={<Divider />}>
-                            <HStack alignItems='center'>
-                              <Text fontSize='sm' bold>{TITLES.NAME}</Text>
-                              <Text fontSize='sm' position="absolute" right={0}>{item.name}</Text>
-                            </HStack>
-                            <HStack alignItems='center'>
-                              <Text fontSize='sm' bold>{TITLES.LATITUDE}</Text>
-                              <Text fontSize='sm' position="absolute" right={0}>{String(item.latlng.latitude)}</Text>
-                            </HStack>
-                            <HStack alignItems='center'>
-                              <Text fontSize='sm' bold>{TITLES.LONGITUDE}</Text>
-                              <Text fontSize='sm' position="absolute" right={0}>{String(item.latlng.longitude)}</Text>
-                            </HStack>
-                            <HStack alignItems='center'>
-                              <Text fontSize='sm' bold>{TITLES.ALTITUDE}</Text>
-                              <Text fontSize='sm' position="absolute" right={0}>{String(item.altitude.toFixed(2))}{TITLES.M}</Text>
-                            </HStack>
-                            <HStack alignItems='center'>
-                              <Text fontSize='sm' bold>{TITLES.DESCRIPTION}</Text>
-                              <Text fontSize='sm' position="absolute" right={0}>{item.description}</Text>
-                            </HStack>
-                            <HStack alignItems='center'>
-                              <Text fontSize='sm' bold>{TITLES.OBSERVATIONS}</Text>
-                              <Text fontSize='sm' position="absolute" right={0}>{item.observations}</Text>
-                            </HStack>
-                            <HStack alignItems='center'>
-                              <Text fontSize='sm' bold>{TITLES.TIMESTAMP}</Text>
-                              <Text fontSize='sm' position="absolute" right={0}>{item.timestamp}</Text>
-                            </HStack>
+                      <Callout onTouchCancel={() => this.setState({ renderCallout: null })} onPress={() => { this.setState({ showSelectMarkerModal: true, renderCallout: null, markerOnEditing: item }); }}>
+                        {this.state.renderCallout === index &&
+                          <Box w={300} h={280}>
                             <Center>
-                              <Heading fontSize='md' color='info.500' bold>{TITLES.TAP_TO_EDIT}</Heading>
+                              <Heading fontSize='md' color='primary.500' bold>{TITLES.POINT_SELECTED}</Heading>
                             </Center>
-                          </VStack>
-                        </Box>
+                            <VStack space={1} divider={<Divider />}>
+                              <HStack alignItems='center'>
+                                <Text fontSize='sm' bold>{TITLES.ID}</Text>
+                                <Text fontSize='sm' position="absolute" right={0}>{item.id}</Text>
+                              </HStack>
+                              <HStack alignItems='center'>
+                                <Text fontSize='sm' bold>{TITLES.LATITUDE}</Text>
+                                <Text fontSize='sm' position="absolute" right={0}>{String(item.latlng.latitude)}</Text>
+                              </HStack>
+                              <HStack alignItems='center'>
+                                <Text fontSize='sm' bold>{TITLES.LONGITUDE}</Text>
+                                <Text fontSize='sm' position="absolute" right={0}>{String(item.latlng.longitude)}</Text>
+                              </HStack>
+                              <HStack alignItems='center'>
+                                <Text fontSize='sm' bold>{TITLES.DISTANCE}</Text>
+                                <Text fontSize='sm' position="absolute" right={0}>{String(item.distance.toFixed(2))}{TITLES.KM}</Text>
+                              </HStack>
+                              <HStack alignItems='center'>
+                                <Text fontSize='sm' bold>{TITLES.DESCRIPTION}</Text>
+                                <Text fontSize='sm' position="absolute" right={0}>{item.description}</Text>
+                              </HStack>
+                              <HStack alignItems='center'>
+                                <Text fontSize='sm' bold>{TITLES.OBSERVATIONS}</Text>
+                                <Text fontSize='sm' position="absolute" right={0}>{item.observations}</Text>
+                              </HStack>
+                              <HStack alignItems='center'>
+                                <Text fontSize='sm' bold>{TITLES.TIMESTAMP}</Text>
+                                <Text fontSize='sm' position="absolute" right={0}>{item.timestamp}</Text>
+                              </HStack>
+                              <Center>
+                                <Heading fontSize='md' color='info.500' bold>{TITLES.TAP_TO_EDIT}</Heading>
+                              </Center>
+                            </VStack>
+                          </Box>
+                        }
                       </Callout>
                     </Marker>
                   ))}
                   {this.state.autoMarkersCordinates != [] &&
                     <Polyline
                       coordinates={this.state.autoMarkersCordinates}
-                      strokeColor={colors.primary[500]} // fallback for when `strokeColors` is not supported by the map-provider
+                      strokeColor={colors.gradient_primary[500]}
                       strokeWidth={6}
                       lineDashPattern={[1]}
                       lineCap='butt'
@@ -522,16 +540,28 @@ class HomeTab extends Component {
                 <Box bg='transparent' position='absolute'>
                   <Text bold color='white'>{TITLES.LATITUDE}{this.state.region.latitude}</Text>
                   <Text bold color='white'>{TITLES.LONGITUDE}{this.state.region.longitude}</Text>
-                  <Text bold color='white'>{TITLES.DISTANCE}{parseFloat(this.state.distanceTravelled).toFixed(2)}{TITLES.KM}</Text>
+                  {this.state.autoMarkers.length > 0
+                    ?
+                    <Text bold color='white'>{TITLES.DISTANCE}{parseFloat(this.state.autoMarkers[this.state.autoMarkers.length - 1].distance).toFixed(2)}{TITLES.KM}</Text>
+                    :
+                    <Text bold color='white'>{TITLES.DISTANCE}{TITLES.ZERO}{TITLES.KM}</Text>
+
+                  }
+
                 </Box>
                 :
                 <Box bg='transparent' position='absolute'>
                   <Text bold>{TITLES.LATITUDE}{this.state.region.latitude}</Text>
                   <Text bold>{TITLES.LONGITUDE}{this.state.region.longitude}</Text>
-                  <Text bold>{TITLES.DISTANCE}{parseFloat(this.state.distanceTravelled).toFixed(2)}{TITLES.KM}</Text>
+                  {this.state.autoMarkers.length > 0
+                    ?
+                    <Text bold>{TITLES.DISTANCE}{parseFloat(this.state.autoMarkers[this.state.autoMarkers.length - 1].distance).toFixed(2)}{TITLES.KM}</Text>
+                    :
+                    <Text bold>{TITLES.DISTANCE}{TITLES.ZERO}{TITLES.KM}</Text>
+
+                  }
                 </Box>
               }
-
             </Box>
           }
 
@@ -539,6 +569,7 @@ class HomeTab extends Component {
           {this.state.showSelectMarkerModal &&
             <Modal
               isOpen={this.state.showSelectMarkerModal}
+              size='full'
               onClose={() => {
                 this.setState({
                   showSelectMarkerModal: false,
@@ -546,41 +577,33 @@ class HomeTab extends Component {
                 });
               }}
             >
-              <Modal.Content>
+              <Modal.Content flex={1}>
                 <Modal.CloseButton />
-                <Modal.Header>{TITLES.EDIT_POINT}</Modal.Header>
+                <Modal.Header>{TITLES.EDIT_POINT + this.state.markerOnEditing.id}</Modal.Header>
                 <Modal.Body>
-                  <VStack space={1} divider={<Divider />}>
-                    <HStack alignItems='center'>
-                      <Text fontSize='sm' bold>{TITLES.NAME}</Text>
-                      <Input variant='unstyled' size='sm' position="absolute" right={0} value={this.state.markerOnEditing.name} onChange={this._onEditMarkerModalTextChangedName} />
-                    </HStack>
-                    <HStack alignItems='center'>
-                      <Text fontSize='sm' bold>{TITLES.LATITUDE}</Text>
-                      <Input variant='unstyled' keyboardType='decimal-pad' size='sm' position="absolute" right={0} value={String(this.state.markerOnEditing.latlng.latitude)} onChange={this._onEditMarkerModalTextChangedLatitude} />
-                    </HStack>
-                    <HStack alignItems='center'>
-                      <Text fontSize='sm' bold>{TITLES.LONGITUDE}</Text>
-                      <Input variant='unstyled' keyboardType='decimal-pad' size='sm' position="absolute" right={0} value={String(this.state.markerOnEditing.latlng.longitude)} onChange={this._onEditMarkerModalTextChangedLongitude} />
-                    </HStack>
-                    <HStack alignItems='center'>
-                      <Text fontSize='sm' bold>{TITLES.ALTITUDE}</Text>
-                      <Input variant='unstyled' keyboardType='decimal-pad' size='sm' position="absolute" right={0} value={String(this.state.markerOnEditing.altitude.toFixed(2))} onChange={this._onEditMarkerModalTextChangedAltitude} />
-                    </HStack>
-                    <HStack alignItems='center'>
-                      <Text fontSize='sm' bold>{TITLES.DESCRIPTION}</Text>
-                    </HStack>
-                    <HStack alignItems='center'>
-                      <Text fontSize='sm' bold>{TITLES.OBSERVATIONS}</Text>
-                      <Input variant='unstyled' size='sm' position="absolute" right={0} value={this.state.markerOnEditing.observations} onChange={this._onEditMarkerModalTextChangedObservations} />
-                    </HStack>
-                    <HStack alignItems='center'>
-                      <Text fontSize='sm' bold>{TITLES.TIMESTAMP}</Text>
-                      <Input variant='unstyled' keyboardType='number-pad' size='sm' position="absolute" right={0} value={String(this.state.markerOnEditing.timestamp)} onChange={this._onEditMarkerModalTextChangedTimestamp} />
-                    </HStack>
-                    <Box />
-                  </VStack>
-
+                  <ScrollView>
+                    <VStack space={1} divider={<Divider />}>
+                      <HStack alignItems='center'>
+                        <Text fontSize='md' bold>{TITLES.DISTANCE}</Text>
+                        <Input variant='unstyled' keyboardType='decimal-pad' size='md' position="absolute" right={0} value={String(this.state.markerOnEditing.distance.toFixed(2))} onChange={this._onEditMarkerModalTextChangedDistance} />
+                      </HStack>
+                      <VStack>
+                        <Text fontSize='md' bold>{TITLES.DESCRIPTION}</Text>
+                        <Text fontSize='sm' bold>{TITLES.DESCRIPTION}</Text>
+                        <Text fontSize='sm' bold>{TITLES.DESCRIPTION}</Text>
+                        <Text fontSize='sm' bold>{TITLES.DESCRIPTION}</Text>
+                      </VStack>
+                      <HStack alignItems='center'>
+                        <Text fontSize='md' bold>{TITLES.OBSERVATIONS}</Text>
+                        <Input variant='unstyled' size='md' position="absolute" right={0} value={this.state.markerOnEditing.observations} onChange={this._onEditMarkerModalTextChangedObservations} />
+                      </HStack>
+                      <HStack alignItems='center'>
+                        <Text fontSize='md' bold>{TITLES.TIMESTAMP}</Text>
+                        <Input variant='unstyled' keyboardType='number-pad' size='md' position="absolute" right={0} value={String(this.state.markerOnEditing.timestamp)} onChange={this._onEditMarkerModalTextChangedTimestamp} />
+                      </HStack>
+                      <Box />
+                    </VStack>
+                  </ScrollView>
                 </Modal.Body>
                 <Modal.Footer>
                   <Button.Group variant="ghost" space={2}>
@@ -594,7 +617,7 @@ class HomeTab extends Component {
                     </Button>
                     <Button
                       onPress={() => {
-                        this._deleteSelectedMarker(this.state.markerOnEditing.name)
+                        this._deleteSelectedMarker(this.state.markerOnEditing.id)
                       }}
                       colorScheme="secondary"
                     >

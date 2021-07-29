@@ -4,8 +4,6 @@ export const colors = {
   black: '#000',
   transparent: 'rgba(255,255,255,0)',
   grey: 'rgba(155,155,155,1)',
-  gradient_primary: '#80acff',
-  gradient_secondary: '#9dff7e',
   gradient_primary: {
     100: "#E5F2FF",
     200: "#CCE3FF",

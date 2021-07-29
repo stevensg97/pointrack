@@ -30,7 +30,13 @@ export default function DrawerContent(props) {
   return (
 
     <DrawerContentScrollView {...props} safeArea>
-      <VStack>
+      <VStack bg={{
+        linearGradient: {
+          colors: ["gradient_primary.500", "gradient_secondary.500"],
+          start: [0, 0],
+          end: [1, 1],
+        },
+      }}>
         <AspectRatio ratio={17 / 9} >
           <ZStack alignItems="center" justifyContent="center">
             <Box>
@@ -60,19 +66,19 @@ export default function DrawerContent(props) {
         <Divider />
         <VStack divider={<Divider />}>
           {DRAWER_OPTIONS.map((option) => (
-            <Pressable _pressed={{opacity: 0.5}} key={option[0]} onPress={() => props.navigation.navigate(option[0])} py={2}>
+            <Pressable _pressed={{ opacity: 0.5 }} key={option[0]} onPress={() => props.navigation.navigate(option[0])} py={2}>
               <HStack space={4} px={4} py={3} alignItems='center'>
                 <Icon as={<MaterialCommunityIcons name={option[2]} />}></Icon>
                 <Text>{option[1]}</Text>
               </HStack>
             </Pressable>
           ))}
-          <Pressable  onPress={() => {}} py={2}>
-              <HStack space={4} px={4} py={3} alignItems='center'>
-                <Icon as={<MaterialCommunityIcons name={'logout'} />}></Icon>
-                <Text>Cerrar Sesión</Text>
-              </HStack>
-            </Pressable>
+          <Pressable onPress={() => { }} py={2}>
+            <HStack space={4} px={4} py={3} alignItems='center'>
+              <Icon as={<MaterialCommunityIcons name={'logout'} />}></Icon>
+              <Text>Cerrar Sesión</Text>
+            </HStack>
+          </Pressable>
         </VStack>
         <Divider />
       </VStack>

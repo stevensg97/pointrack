@@ -31,7 +31,7 @@ export const MAP_DATA = {
       VALUE: 'satellite'
     },
     TERRAIN: {
-      LABEL: 'Terreno',
+      LABEL: 'Relieve',
       VALUE: 'terrain'
     },
   },
@@ -74,7 +74,6 @@ export const PLACEHOLDERS = {
   FAB_POINT: 'Punto',
   FAB_RESET: 'Reiniciar',
   FAB_TRACKING: 'Tracking',
-
 }
 
 export const TITLES = {
@@ -84,6 +83,7 @@ export const TITLES = {
   START: 'Inicio',
   END: 'Final',
   NAME: 'Nombre: ',
+  ID: 'Id: ',
   LATITUDE: 'Latitud: ',
   LONGITUDE: 'Longitud: ',
   ALTITUDE: 'Altitud: ',
@@ -93,9 +93,31 @@ export const TITLES = {
   DISTANCE: 'Distancia: ',
   KM: 'km',
   M:'m',
-  EDIT_POINT: 'Editar punto',
+  EDIT_POINT: 'Editar punto: ',
   POINT_SELECTED: 'Punto seleccionado',
-  TAP_TO_EDIT: 'Pulse para editar'
+  TAP_TO_EDIT: 'Pulse para editar',
+  AUTOCENTER: 'Autocentrar:',
+  ZERO: '0',
+  RIGHT_SIDE: 'Lado derecho',
+  LEFT_SIDE: 'Lado izquierdo',
+  BOTH_SIDES: 'Ambos lados',
+  CROSS_CULVERT: 'Alcantarilla transversal',
+  DITCH: 'Cuneta'
+}
 
+export const SELECT_MARKER_DESCRIPTION_VALUES = {
+  SIDES:{
+    PRIVATE_PROPERTY_ACCESS: 'Acceso a propiedad privada',
+    JUNCTION_WITH_PUBLIC_STREET: 'Entronque con calle pública',
+    JETTY_ACCESS: 'Acceso a embarcadero'
+  },
+  CROSS_CULVERT:{
+    HEAD_TYPE: 'Tipo de cabezal',
+    STATE: ''
+
+  },
+  DITCH:{
+
+  }
 }
 
