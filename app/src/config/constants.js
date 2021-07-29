@@ -21,7 +21,7 @@ export const TYPE_ALERT = {
 export const MAP_DATA = {
   LATITUDE_DELTA: 0.0306097200809905,
   LONGITUDE_DELTA: 0.016958601772799398,
-  MAP_TYPES:{
+  MAP_TYPES: {
     STANDARD: {
       LABEL: 'Normal',
       VALUE: 'standard'
@@ -70,7 +70,7 @@ export const DRAWER_OPTIONS = [
 ]
 
 export const PLACEHOLDERS = {
-  MAPVIEW_TYPE: 'Tipo de vista del mapa' ,
+  MAPVIEW_TYPE: 'Tipo de vista del mapa',
   FAB_POINT: 'Punto',
   FAB_RESET: 'Reiniciar',
   FAB_TRACKING: 'Tracking',
@@ -79,7 +79,7 @@ export const PLACEHOLDERS = {
 export const TITLES = {
   POINTRACK: 'PoinTrack',
   HOME: 'Inicio',
-  BIENVENIDO: '¡Bienvenido!',
+  WELCOME: '¡Bienvenido!',
   START: 'Inicio',
   END: 'Final',
   NAME: 'Nombre: ',
@@ -91,33 +91,45 @@ export const TITLES = {
   OBSERVATIONS: 'Observaciones: ',
   TIMESTAMP: 'Hora: ',
   DISTANCE: 'Distancia: ',
+  DISTANCE_KM: 'Distancia (km): ',
   KM: 'km',
-  M:'m',
+  M: 'm',
   EDIT_POINT: 'Editar punto: ',
   POINT_SELECTED: 'Punto seleccionado',
   TAP_TO_EDIT: 'Pulse para editar',
   AUTOCENTER: 'Autocentrar:',
   ZERO: '0',
-  RIGHT_SIDE: 'Lado derecho',
-  LEFT_SIDE: 'Lado izquierdo',
-  BOTH_SIDES: 'Ambos lados',
-  CROSS_CULVERT: 'Alcantarilla transversal',
-  DITCH: 'Cuneta'
+  RIGHT_SIDE: '- Lado derecho:',
+  LEFT_SIDE: '- Lado izquierdo:',
+  BOTH_SIDES: '- Ambos lados:',
+  CROSS_CULVERT: '- Alcantarilla transversal:',
+  DITCH: '- Cuneta:',
+  HEAD_TYPE: 'Tipo de cabezal',
+  STATE: 'Estado',
+  DITCH_TYPE: 'Tipo de cuneta',
 }
 
 export const SELECT_MARKER_DESCRIPTION_VALUES = {
-  SIDES:{
-    PRIVATE_PROPERTY_ACCESS: 'Acceso a propiedad privada',
-    JUNCTION_WITH_PUBLIC_STREET: 'Entronque con calle pública',
-    JETTY_ACCESS: 'Acceso a embarcadero'
-  },
-  CROSS_CULVERT:{
-    HEAD_TYPE: 'Tipo de cabezal',
-    STATE: ''
+  SIDES: [
+    {label: 'Acceso a propiedad privada', value:'APP'},
+    {label: 'Entronque con calle pública', value:'ECP'},
+    {label:'Acceso a embarcadero', value:'AE'}
+  ],
+  CROSS_CULVERT: {
+    HEAD_TYPE: [
+      'Lado derecho',
+      'Lado izquierdo'
+    ],
+    STATE: ['Buen estado', 'Requiere limpieza', 'Colapsada']
 
   },
-  DITCH:{
-
-  }
+  DITCH: [
+    'Canal abierto',
+    'Cordón y caño',
+    'Cuneta revestida',
+    'Cuneta de tierra',
+    'Losa de concreto',
+    'Acera'
+  ]
 }
 

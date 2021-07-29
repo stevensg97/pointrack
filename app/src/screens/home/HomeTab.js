@@ -26,7 +26,8 @@ import {
   TITLES,
   MAP_DATA,
   PLACEHOLDERS,
-  ICONS
+  ICONS,
+  SELECT_MARKER_DESCRIPTION_VALUES
 } from '../../config/constants';
 import { MaterialCommunityIcons } from "@expo/vector-icons"
 import * as Location from 'expo-location';
@@ -50,7 +51,7 @@ class HomeTab extends Component {
       selectedMarkers: [],
       selectedMarkersCounter: 0,
       renderCallout: null,
-      showSelectMarkerModal: true,
+      showSelectMarkerModal: false,
       markerOnEditing: {
         id: '',
         latlng: {
@@ -59,7 +60,18 @@ class HomeTab extends Component {
         },
         altitude: -1,
         distance: -1,
-        description: [],
+        description: {
+          leftSide: '',
+          rightSide: '',
+          bothSides: '',
+          crossCulvert: {
+            headType: '',
+            state: ''
+          },
+          ditch: {
+            type: ''
+          }
+        },
         observations: '',
         timestamp: 0
       },
@@ -81,7 +93,18 @@ class HomeTab extends Component {
       },
       altitude: -1,
       distance: 0,
-      description: [],
+      description: {
+        leftSide: '',
+        rightSide: '',
+        bothSides: '',
+        crossCulvert: {
+          headType: '',
+          state: ''
+        },
+        ditch: {
+          type: ''
+        }
+      },
       observations: '',
       timestamp: 0
     }
@@ -138,7 +161,18 @@ class HomeTab extends Component {
       latlng: { latitude: this.state.region.latitude, longitude: this.state.region.longitude },
       distance: this.state.autoMarkers[this.state.autoMarkers.length - 1].distance,
       altitude: -1,
-      description: [],
+      description: {
+        leftSide: '',
+        rightSide: '',
+        bothSides: '',
+        crossCulvert: {
+          headType: '',
+          state: ''
+        },
+        ditch: {
+          type: ''
+        }
+      },
       observations: '',
       timestamp: 0
     }
@@ -208,33 +242,87 @@ class HomeTab extends Component {
     }
   }
 
-  _onEditMarkerModalTextChangedName = event => {
-    let marker = this.state.markerOnEditing;
-    marker.name = event.nativeEvent.text;
-    this.setState({
-      markerOnEditing: marker
-    });
-  };
-
-  _onEditMarkerModalTextChangedLatitude = event => {
+  _onEditMarkerModalTextChangedRightSide = event => {
     let marker = JSON.parse(JSON.stringify(this.state.markerOnEditing));
-    marker.latlng.latitude = Number(event.nativeEvent.text);
+    marker.description.rightSide = event.nativeEvent.text;
     this.setState({
       markerOnEditing: marker
     });
   };
 
-  _onEditMarkerModalTextChangedLongitude = event => {
-    let marker = JSON.parse(JSON.stringify(this.state.markerOnEditing));;
-    marker.latlng.longitude = Number(event.nativeEvent.text);
+  _onEditMarkerModalButtonPressedRightSide = value => {
+    let marker = JSON.parse(JSON.stringify(this.state.markerOnEditing));
+    if (marker.description.rightSide !== '') {
+      marker.description.rightSide = marker.description.rightSide + ', ' + value;
+    } else {
+      marker.description.rightSide = marker.description.rightSide + value;
+    }
     this.setState({
       markerOnEditing: marker
     });
   };
 
-  _onEditMarkerModalTextChangedDistance = event => {
-    let marker = JSON.parse(JSON.stringify(this.state.markerOnEditing));;
-    marker.distance = Number(event.nativeEvent.text);
+
+  _onEditMarkerModalTextChangedLeftSide = event => {
+    let marker = JSON.parse(JSON.stringify(this.state.markerOnEditing));
+    marker.description.leftSide = event.nativeEvent.text;
+    this.setState({
+      markerOnEditing: marker
+    });
+  };
+
+  _onEditMarkerModalButtonPressedLeftSide = value => {
+    let marker = JSON.parse(JSON.stringify(this.state.markerOnEditing));
+    if (marker.description.leftSide !== '') {
+      marker.description.leftSide = marker.description.leftSide + ', ' + value;
+    } else {
+      marker.description.leftSide = marker.description.leftSide + value;
+    }
+
+    this.setState({
+      markerOnEditing: marker
+    });
+  };
+
+  _onEditMarkerModalTextChangedBothSides = event => {
+    let marker = JSON.parse(JSON.stringify(this.state.markerOnEditing));
+    marker.description.bothSides = event.nativeEvent.text;
+    this.setState({
+      markerOnEditing: marker
+    });
+  };
+
+  _onEditMarkerModalButtonPressedBothSides = value => {
+    let marker = JSON.parse(JSON.stringify(this.state.markerOnEditing));
+    if (marker.description.bothSides !== '') {
+      marker.description.bothSides = marker.description.bothSides + ', ' + value;
+    } else {
+      marker.description.bothSides = marker.description.bothSides + value;
+    }
+    this.setState({
+      markerOnEditing: marker
+    });
+  };
+
+  _onEditMarkerModalTextChangedCrossCulvertHeadType = value => {
+    let marker = JSON.parse(JSON.stringify(this.state.markerOnEditing));
+    marker.description.crossCulvert.headType = value;
+    this.setState({
+      markerOnEditing: marker
+    });
+  };
+
+  _onEditMarkerModalTextChangedCrossCulvertState = value => {
+    let marker = JSON.parse(JSON.stringify(this.state.markerOnEditing));
+    marker.description.crossCulvert.state = value;
+    this.setState({
+      markerOnEditing: marker
+    });
+  };
+
+  _onEditMarkerModalTextChangedDitchType = value => {
+    let marker = JSON.parse(JSON.stringify(this.state.markerOnEditing));
+    marker.description.ditch.type = value;
     this.setState({
       markerOnEditing: marker
     });
@@ -248,9 +336,9 @@ class HomeTab extends Component {
     });
   };
 
-  _onEditMarkerModalTextChangedTimestamp = event => {
-    let marker = JSON.parse(JSON.stringify(this.state.markerOnEditing));;
-    marker.timestamp = Number(event.nativeEvent.text);
+  _onEditMarkerModalTextChangedDistance = event => {
+    let marker = JSON.parse(JSON.stringify(this.state.markerOnEditing));
+    marker.distance = Number(event.nativeEvent.text);
     this.setState({
       markerOnEditing: marker
     });
@@ -266,6 +354,7 @@ class HomeTab extends Component {
       autoMarkers: [],
       autoMarkersCordinates: [],
       selectedMarkers: [],
+      selectedMarkersCounter: 0,
       isTracking: false,
     });
   }
@@ -338,7 +427,7 @@ class HomeTab extends Component {
                             {PLACEHOLDERS.FAB_POINT}
                           </Text>
                         }
-                        onPress={this._addSelectedMarker}
+                        onPress={() => { this._addSelectedMarker(); this._stopTracking(); }}
                       />
                       <Fab
                         position="absolute"
@@ -479,7 +568,7 @@ class HomeTab extends Component {
                     >
                       <Callout onTouchCancel={() => this.setState({ renderCallout: null })} onPress={() => { this.setState({ showSelectMarkerModal: true, renderCallout: null, markerOnEditing: item }); }}>
                         {this.state.renderCallout === index &&
-                          <Box w={300} h={280}>
+                          <Box w={300} h={250}>
                             <Center>
                               <Heading fontSize='md' color='primary.500' bold>{TITLES.POINT_SELECTED}</Heading>
                             </Center>
@@ -501,12 +590,8 @@ class HomeTab extends Component {
                                 <Text fontSize='sm' position="absolute" right={0}>{String(item.distance.toFixed(2))}{TITLES.KM}</Text>
                               </HStack>
                               <HStack alignItems='center'>
-                                <Text fontSize='sm' bold>{TITLES.DESCRIPTION}</Text>
-                                <Text fontSize='sm' position="absolute" right={0}>{item.description}</Text>
-                              </HStack>
-                              <HStack alignItems='center'>
                                 <Text fontSize='sm' bold>{TITLES.OBSERVATIONS}</Text>
-                                <Text fontSize='sm' position="absolute" right={0}>{item.observations}</Text>
+                                <Text fontSize='sm' w='60%' isTruncated={true} position="absolute" right={0}>{item.observations}</Text>
                               </HStack>
                               <HStack alignItems='center'>
                                 <Text fontSize='sm' bold>{TITLES.TIMESTAMP}</Text>
@@ -575,6 +660,7 @@ class HomeTab extends Component {
                   showSelectMarkerModal: false,
                   markerOnEditing: this.blankMarker
                 });
+                this._startTracking();
               }}
             >
               <Modal.Content flex={1}>
@@ -583,23 +669,135 @@ class HomeTab extends Component {
                 <Modal.Body>
                   <ScrollView>
                     <VStack space={1} divider={<Divider />}>
-                      <HStack alignItems='center'>
-                        <Text fontSize='md' bold>{TITLES.DISTANCE}</Text>
-                        <Input variant='unstyled' keyboardType='decimal-pad' size='md' position="absolute" right={0} value={String(this.state.markerOnEditing.distance.toFixed(2))} onChange={this._onEditMarkerModalTextChangedDistance} />
-                      </HStack>
-                      <VStack>
+                      <VStack space={3}>
                         <Text fontSize='md' bold>{TITLES.DESCRIPTION}</Text>
-                        <Text fontSize='sm' bold>{TITLES.DESCRIPTION}</Text>
-                        <Text fontSize='sm' bold>{TITLES.DESCRIPTION}</Text>
-                        <Text fontSize='sm' bold>{TITLES.DESCRIPTION}</Text>
+                        <VStack space={2}>
+                          <HStack alignItems='center'>
+                            <Text fontSize='sm' bold>{TITLES.RIGHT_SIDE}</Text>
+                            <Input fontSize='sm' variant='underlined' textAlign='right' w='70%' keyboardType='default' position="absolute" right={0} value={this.state.markerOnEditing.description.rightSide} onChange={this._onEditMarkerModalTextChangedRightSide} />
+                          </HStack>
+                          <ScrollView horizontal={true} ml={3}>
+                            <HStack mt={4} space={1}>
+                              {SELECT_MARKER_DESCRIPTION_VALUES.SIDES.map((item, index) => (
+                                <Button key={index} size='sm' alignSelf="center" variant="solid" onPress={() => { this._onEditMarkerModalButtonPressedRightSide(item.value) }}>
+                                  {item.label}
+                                </Button>
+                              ))}
+
+                            </HStack>
+                          </ScrollView>
+                        </VStack>
+                        <VStack space={2}>
+                          <HStack alignItems='center'>
+                            <Text fontSize='sm' bold>{TITLES.LEFT_SIDE}</Text>
+                            <Input fontSize='sm' variant='underlined' textAlign='right' w='70%' keyboardType='default' position="absolute" right={0} value={this.state.markerOnEditing.description.leftSide} onChange={this._onEditMarkerModalTextChangedLeftSide} />
+                          </HStack>
+                          <ScrollView horizontal={true} ml={3}>
+                            <HStack mt={4} space={1}>
+                              {SELECT_MARKER_DESCRIPTION_VALUES.SIDES.map((item, index) => (
+                                <Button key={index} size='sm' alignSelf="center" variant="solid" onPress={() => { this._onEditMarkerModalButtonPressedLeftSide(item.value) }}>
+                                  {item.label}
+                                </Button>
+                              ))}
+
+                            </HStack>
+                          </ScrollView>
+                        </VStack>
+                        <VStack space={2}>
+                          <HStack alignItems='center'>
+                            <Text fontSize='sm' bold>{TITLES.BOTH_SIDES}</Text>
+                            <Input fontSize='sm' variant='underlined' textAlign='right' w='70%' keyboardType='default' position="absolute" right={0} value={this.state.markerOnEditing.description.bothSides} onChange={this._onEditMarkerModalTextChangedBothSides} />
+                          </HStack>
+                          <ScrollView horizontal={true} ml={3}>
+                            <HStack mt={4} space={1}>
+                              {SELECT_MARKER_DESCRIPTION_VALUES.SIDES.map((item, index) => (
+                                <Button key={index} size='sm' alignSelf="center" variant="solid" onPress={() => { this._onEditMarkerModalButtonPressedBothSides(item.value) }} >
+                                  {item.label}
+                                </Button>
+                              ))}
+
+                            </HStack>
+                          </ScrollView>
+                        </VStack>
+                        <Divider />
+                        <VStack>
+                          <Text fontSize='sm' bold>{TITLES.CROSS_CULVERT}</Text>
+                          <Select
+                            ml={3}
+                            position='relative'
+                            accessibilityLabel={TITLES.HEAD_TYPE}
+                            placeholder={TITLES.HEAD_TYPE}
+                            color='primary.500'
+                            placeholderTextColor='primary.500'
+                            value={this.state.markerOnEditing.description.crossCulvert.headType}
+                            onValueChange={this._onEditMarkerModalTextChangedCrossCulvertHeadType}
+                            _selectedItem={{
+                              bg: "primary.500",
+                              endIcon: <CheckIcon size={4} />,
+                            }}
+                          >
+                            {SELECT_MARKER_DESCRIPTION_VALUES.CROSS_CULVERT.HEAD_TYPE.map((item, index) => (
+                              <Select.Item key={index} label={item} value={item} />
+                            ))}
+                          </Select>
+                          <Select
+                            ml={3}
+                            position='relative'
+                            accessibilityLabel={TITLES.STATE}
+                            placeholder={TITLES.STATE}
+                            color='primary.500'
+                            placeholderTextColor='primary.500'
+                            value={this.state.markerOnEditing.description.crossCulvert.state}
+                            onValueChange={this._onEditMarkerModalTextChangedCrossCulvertState}
+                            _selectedItem={{
+                              bg: "primary.500",
+                              endIcon: <CheckIcon size={4} />,
+                            }}
+                          >
+                            {SELECT_MARKER_DESCRIPTION_VALUES.CROSS_CULVERT.STATE.map((item, index) => (
+                              <Select.Item key={index} label={item} value={item} />
+                            ))}
+                          </Select>
+                        </VStack>
+                        <Divider />
+                        <VStack>
+                          <Text fontSize='sm' bold>{TITLES.DITCH}</Text>
+                          <Select
+                            variant='underlined'
+                            ml={3}
+                            position='relative'
+                            accessibilityLabel={TITLES.DITCH_TYPE}
+                            placeholder={TITLES.DITCH_TYPE}
+                            color='primary.500'
+                            placeholderTextColor='primary.500'
+                            value={this.state.markerOnEditing.description.ditch.type}
+                            onValueChange={this._onEditMarkerModalTextChangedDitchType}
+                            _selectedItem={{
+                              bg: "primary.500",
+                              endIcon: <CheckIcon size={4} />,
+                            }}
+                          >
+                            {SELECT_MARKER_DESCRIPTION_VALUES.DITCH.map((item, index) => (
+                              <Select.Item key={index} label={item} value={item} />
+                            ))}
+                          </Select>
+                        </VStack>
                       </VStack>
                       <HStack alignItems='center'>
                         <Text fontSize='md' bold>{TITLES.OBSERVATIONS}</Text>
-                        <Input variant='unstyled' size='md' position="absolute" right={0} value={this.state.markerOnEditing.observations} onChange={this._onEditMarkerModalTextChangedObservations} />
+                        <Input
+                          variant='unstyled'
+                          textAlign='right'
+                          size='md' w='65%'
+                          position="absolute"
+                          right={0}
+                          value={this.state.markerOnEditing.observations}
+                          onChange={this._onEditMarkerModalTextChangedObservations}
+                        />
                       </HStack>
                       <HStack alignItems='center'>
-                        <Text fontSize='md' bold>{TITLES.TIMESTAMP}</Text>
-                        <Input variant='unstyled' keyboardType='number-pad' size='md' position="absolute" right={0} value={String(this.state.markerOnEditing.timestamp)} onChange={this._onEditMarkerModalTextChangedTimestamp} />
+                        <Text fontSize='md' bold>{TITLES.DISTANCE_KM}</Text>
+                        <Input variant='unstyled' keyboardType='decimal-pad' textAlign='right' size='md' w='65%' position="absolute" right={0} value={String(this.state.markerOnEditing.distance.toFixed(2))} onChange={this._onEditMarkerModalTextChangedDistance} />
                       </HStack>
                       <Box />
                     </VStack>
@@ -610,14 +808,16 @@ class HomeTab extends Component {
                     <Button
                       colorScheme="info"
                       onPress={() => {
-                        this._updateSelectedMarker(this.state.markerOnEditing)
+                        this._updateSelectedMarker(this.state.markerOnEditing);
+                        this._startTracking();
                       }}
                     >
                       {BUTTONS.SAVE}
                     </Button>
                     <Button
                       onPress={() => {
-                        this._deleteSelectedMarker(this.state.markerOnEditing.id)
+                        this._deleteSelectedMarker(this.state.markerOnEditing.id);
+                        this._startTracking();
                       }}
                       colorScheme="secondary"
                     >

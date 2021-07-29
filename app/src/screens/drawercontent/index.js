@@ -29,14 +29,14 @@ import { colors } from '../../config/styles';
 export default function DrawerContent(props) {
   return (
 
-    <DrawerContentScrollView {...props} safeArea>
-      <VStack bg={{
+    <DrawerContentScrollView {...props} safeArea >
+      <VStack pb='183.3%' bg={{
         linearGradient: {
           colors: ["gradient_primary.500", "gradient_secondary.500"],
           start: [0, 0],
-          end: [1, 1],
+          end: [1, 0],
         },
-      }}>
+      }} >
         <AspectRatio ratio={17 / 9} >
           <ZStack alignItems="center" justifyContent="center">
             <Box>
@@ -60,7 +60,7 @@ export default function DrawerContent(props) {
         <HStack space={4} alignItems="center" p={2} pt={3}>
           <Avatar source={IconUser}></Avatar>
           <Heading size="sm" ml={-1}>
-            {TITLES.BIENVENIDO}
+            {TITLES.WELCOME}
           </Heading>
         </HStack>
         <Divider />
@@ -80,6 +80,7 @@ export default function DrawerContent(props) {
             </HStack>
           </Pressable>
         </VStack>
+
         <Divider />
       </VStack>
     </DrawerContentScrollView>
