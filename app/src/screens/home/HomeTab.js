@@ -131,28 +131,30 @@ class HomeTab extends Component {
   }
 
   _addAutoMarker = async () => { //arreglar la suma de distancias
-    let location = await Location.getCurrentPositionAsync({ accuracy: 6 }); // Se obtiene la posición actual
-    const newCoordinates = { latitude: location.coords.latitude, longitude: location.coords.longitude } //Se extraen las coordenadas del nuevo marcador
-    const len = this.state.autoMarkers.length; //Se obtiene el largo de la lista de marcadores original
-    let distance = 0; //Se define la distancia inicial
-    if (len >= 1) { //Se verifica que la lista no esté vacia
-      const prevCoords = { latitude: this.state.autoMarkers[len - 1].latlng.latitude, longitude: this.state.autoMarkers[len - 1].latlng.longitude } //Se obtienen las coordenadas del último marcador
-      distance = this.state.autoMarkers[len - 1].distance + this._calcDistance(prevCoords, newCoordinates);  //Se calcula la distancia entre el último marcador y el nuevo
+    if (this.state.isTracking) {
+      let location = await Location.getCurrentPositionAsync({ accuracy: 6 }); // Se obtiene la posición actual
+      const newCoordinates = { latitude: location.coords.latitude, longitude: location.coords.longitude } //Se extraen las coordenadas del nuevo marcador
+      const len = this.state.autoMarkers.length; //Se obtiene el largo de la lista de marcadores original
+      let distance = 0; //Se define la distancia inicial
+      if (len >= 1) { //Se verifica que la lista no esté vacia
+        const prevCoords = { latitude: this.state.autoMarkers[len - 1].latlng.latitude, longitude: this.state.autoMarkers[len - 1].latlng.longitude } //Se obtienen las coordenadas del último marcador
+        distance = this.state.autoMarkers[len - 1].distance + this._calcDistance(prevCoords, newCoordinates);  //Se calcula la distancia entre el último marcador y el nuevo
+      }
+      const newMarker = { //Se crea el nuevo marcador
+        id: 'auto' + String(this.state.autoMarkers.length),
+        latlng: {
+          latitude: newCoordinates.latitude,
+          longitude: newCoordinates.longitude
+        },
+        altitude: location.coords.altitude,
+        distance: distance,
+        timestamp: location.timestamp
+      }
+      this.setState(prevState => ({ //Se actualizan las listas de marcadores y coordenadas
+        autoMarkers: [...prevState.autoMarkers, newMarker],
+        autoMarkersCordinates: [...prevState.autoMarkersCordinates, newCoordinates]
+      }));
     }
-    const newMarker = { //Se crea el nuevo marcador
-      id: 'auto' + String(this.state.autoMarkers.length),
-      latlng: {
-        latitude: newCoordinates.latitude,
-        longitude: newCoordinates.longitude
-      },
-      altitude: location.coords.altitude,
-      distance: distance,
-      timestamp: location.timestamp
-    }
-    this.setState(prevState => ({ //Se actualizan las listas de marcadores y coordenadas
-      autoMarkers: [...prevState.autoMarkers, newMarker],
-      autoMarkersCordinates: [...prevState.autoMarkersCordinates, newCoordinates]
-    }));
   }
 
   _addSelectedMarker = async () => {
@@ -427,7 +429,7 @@ class HomeTab extends Component {
                             {PLACEHOLDERS.FAB_POINT}
                           </Text>
                         }
-                        onPress={() => { this._addSelectedMarker(); this._stopTracking(); }}
+                        onPress={() => { this._addSelectedMarker(); this.setState({isTracking: false}); }}
                       />
                       <Fab
                         position="absolute"
@@ -658,9 +660,9 @@ class HomeTab extends Component {
               onClose={() => {
                 this.setState({
                   showSelectMarkerModal: false,
-                  markerOnEditing: this.blankMarker
+                  markerOnEditing: this.blankMarker,
+                  isTracking: true
                 });
-                this._startTracking();
               }}
             >
               <Modal.Content flex={1}>
@@ -809,7 +811,7 @@ class HomeTab extends Component {
                       colorScheme="info"
                       onPress={() => {
                         this._updateSelectedMarker(this.state.markerOnEditing);
-                        this._startTracking();
+                        this.setState({isTracking: true});
                       }}
                     >
                       {BUTTONS.SAVE}
@@ -817,7 +819,7 @@ class HomeTab extends Component {
                     <Button
                       onPress={() => {
                         this._deleteSelectedMarker(this.state.markerOnEditing.id);
-                        this._startTracking();
+                        this.setState({isTracking: true});
                       }}
                       colorScheme="secondary"
                     >
